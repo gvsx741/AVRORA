@@ -9,7 +9,7 @@ unsigned int TextureLoad(const std::string& directory, const char* texName, bool
 
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
-	
+
 	int nrComponents, width, height;
 	unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
 
@@ -38,7 +38,7 @@ unsigned int TextureLoad(const std::string& directory, const char* texName, bool
 		stbi_image_free(data);
 	}
 
-	return textureID;
+	return textureID;	
 }
 
 unsigned int loadCubemap(const std::string& directory, std::vector<std::string> faces) {

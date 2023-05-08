@@ -6,6 +6,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <thread>
+#include <mutex>
 #include <chrono>
 #include <iostream>
 #include <map>
@@ -13,8 +14,11 @@
 #include "Renderer/Camera.h"
 #include "Renderer/Draw.h"
 
-#define DEBUG
 
+
+
+
+//initiate variables & arrays
 bool firstMouse = true;
 
 const unsigned int SCR_WIDTH = 800;
@@ -26,12 +30,16 @@ unsigned int normal_VBO;
 unsigned int VAO;
 unsigned int transparentVAO, transparentVBO;
 unsigned int texture1, texture2, texture3, specularMap, grassTex;
+unsigned int counter; 
 
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 
 float deltaTime = 0.0f;	// time between current frame and last frame
+float diffTime = 0.0f;
 float lastFrame = 0.0f;
+float prevFrame = 0.0f;
+float currentFrame;
 
 float skyboxVertices[] = {
     -1.0f,  1.0f, -1.0f,
@@ -231,6 +239,7 @@ float quadVertices[] = {
      1.0f,  1.0f,  1.0f, 1.0f
 };
 
+//positions for lamps
 glm::vec3 pointLightPositions[] = {
     glm::vec3(2.0f, 1.0f, 0.0f),
     glm::vec3(9.2f, 3.0f, 4.5f),
@@ -239,6 +248,7 @@ glm::vec3 pointLightPositions[] = {
 
 glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
 
+//faces for the cubemap
 std::vector<std::string> faces {
     "right.jpg",
     "left.jpg",
@@ -250,16 +260,18 @@ std::vector<std::string> faces {
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
+//init the perspective
 glm::mat4 projection = glm::perspective(45.0f, (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-Renderer::Shader* pShSingleColor; //for bordering
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+//define the functions
 void processInput(GLFWwindow* window);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
+void FPSLimiter(GLFWwindow* pWindow);
     
 int main(int argc, char** argv)
 {
+    //init a path to resources for get resoureces
     const std::string resPath = GetResourcePath(argv[0]);
 
     if (!glfwInit()) {
@@ -274,9 +286,12 @@ int main(int argc, char** argv)
     #endif // DEBUG
 
 
+
+
+
+    //Initiate object of window
     GLFWwindow* pWindow = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "AVRORA", nullptr, nullptr);
-    if (!pWindow)
-    {
+    if (!pWindow) {
         std::cout << "failed to create window" << std::endl;
         glfwTerminate();
         return -1;
@@ -288,13 +303,25 @@ int main(int argc, char** argv)
 
     glfwSetInputMode(pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+
+
+
+
+    //load OpenGL
     if (!gladLoadGL()) {
         std::cout << "Failed to load GLAD!" << std::endl;
         return -1;
     }
-    std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
-    std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
+    #ifdef DEBUG
+        std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
+        std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
+    #endif // DEBUG
 
+
+
+
+
+    //init shaders
     Renderer::Shader ShCube(resPath, "cube.vs", "cube.fs");
     Renderer::Shader ShSingleColor(resPath, "singleColor.vs", "singleColor.fs");
     Renderer::Shader ShSingleTexture(resPath, "singleTexture.vs", "singleTexture.fs");
@@ -305,16 +332,24 @@ int main(int argc, char** argv)
     Renderer::Shader ShReflect(resPath, "reflect.vs", "reflect.fs");
     Renderer::Shader ShQuad(resPath, "quad.vs", "quad.fs");
 
-    pShSingleColor = &ShSingleColor;
 
+
+
+
+    //texture upload 
     texture1 = TextureLoad(resPath, "textures/container.jpg");
     texture2 = TextureLoad(resPath, "textures/kotya.jpg");  
     texture3 = TextureLoad(resPath, "textures/container2.jpg");
     specularMap = TextureLoad(resPath, "textures/container2_specular.jpg");
     grassTex = TextureLoad(resPath, "textures/grass.png");
-
+    //loading textures for the cubemap
     unsigned int cubemapTexture = loadCubemap(resPath + "textures/skybox/", faces);
 
+
+
+
+
+    //framebuffer initiation
     unsigned int framebuffer;
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -334,9 +369,9 @@ int main(int argc, char** argv)
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 
     // configure second post-processing framebuffer
     unsigned int intermediateFBO;
@@ -352,14 +387,19 @@ int main(int argc, char** argv)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);	// we only need a color buffer
 
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cout << "ERROR::FRAMEBUFFER:: Intermediate framebuffer is not complete!" << std::endl;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 
     //bind default framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    //create cube's vbo, vao & bind
+
+
+
+
+    //vbo, vao & binding
+    //create cube's vbo, vao, binding
     glGenBuffers(1, &vertex_VBO);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(CubeVertices), CubeVertices, GL_STATIC_DRAW);
@@ -410,8 +450,12 @@ int main(int argc, char** argv)
     glEnableVertexAttribArray(1);
 
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-    
-    //setting uniforms
+
+
+
+
+
+    //setting uniforms for shaders
     ShCube.Use();
     ShCube.SetUniform("projection", projection);
     
@@ -470,12 +514,24 @@ int main(int argc, char** argv)
     ShBackpackExplode.Use();
     ShBackpackExplode.SetUniform("projection", projection);
 
+
+
+
+
+    //init the model class and load backpack model 
     Model MBackpack(resPath, "models/backpack/backpack.obj");
 
-    //time complite
+
+
+
+
+    //time complite project
     #ifdef DEBUG
         std::cout << glfwGetTime() << std::endl;
     #endif // DEBUG
+
+
+
 
 
     glEnable(GL_DEPTH_TEST);
@@ -495,25 +551,38 @@ int main(int argc, char** argv)
 
     while (!glfwWindowShouldClose(pWindow))
     {   
-        float currentFrame = static_cast<float>(glfwGetTime());
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+        //for limit FPS to 60 frames per second
+        FPSLimiter(pWindow);
 
         processInput(pWindow);
         
+        //initiate view
         glm::mat4 view = camera.GetViewMatrix();
         
+        //binding the framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+        //clear color
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+
+        //clear depth and stencil buffers
         glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        
+        //enable depth and stencil buffers
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_STENCIL_TEST);
 
+        //setting for stencil buffer
         glStencilFunc(GL_ALWAYS, 1, 0xFF);
         glStencilMask(0x00);
 
+
+
+
+
+        //drawing objects
         //draw skybox
-        DrawSkybox(view, ShSkybox, vertex_VBO, cubemapTexture);
+        DrawSkybox(view, ShSkybox, vertex_VBO, cubemapTexture); 
             
         //draw reflect cube
         DrawReflectCube(view, ShReflect, vertex_VBO, glm::vec3(3.5f, 1.5f, 1.0f), cubemapTexture, camera.Position);
@@ -522,9 +591,9 @@ int main(int argc, char** argv)
         DrawModel(view, camera.Position, ShBackpackExplode, MBackpack, glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(1.0f));
         DrawModel(view, camera.Position, ShBackpack, MBackpack, glm::vec3(4.0f, 0.0f, -5.0f), glm::vec3(1.0f));
 
-        DrawCube(true, view, camera.Position, ShCube, vertex_VBO, glm::vec3(1.0f, 1.3f, 6.0f), glm::vec3(1.02f), texture3, specularMap, (float)glfwGetTime() - 98, glm::vec3(0.0f, 1.0f, 1.0f), pShSingleColor);
-        DrawCube(false, view, camera.Position, ShCube, vertex_VBO, glm::vec3(2.0f, 2.3f, 8.0f), glm::vec3(1.02f), texture3, specularMap, (float)glfwGetTime() + 30, glm::vec3(1.0f, 1.0f, 1.0f), pShSingleColor);
-        DrawCube(false, view, camera.Position, ShCube, vertex_VBO, glm::vec3(2.0f, -0.3f, 5.0f), glm::vec3(1.02f), texture3, specularMap, (float)glfwGetTime() + (float)glfwGetTime() / 2, glm::vec3(0.0f, 1.0f, 0.0f), pShSingleColor);
+        DrawCube(true, view, camera.Position, ShCube, vertex_VBO, glm::vec3(1.0f, 1.3f, 6.0f), glm::vec3(1.02f), texture3, specularMap, (float)glfwGetTime() - 98, glm::vec3(0.0f, 1.0f, 1.0f), &ShSingleColor);
+        DrawCube(false, view, camera.Position, ShCube, vertex_VBO, glm::vec3(2.0f, 2.3f, 8.0f), glm::vec3(1.02f), texture3, specularMap, (float)glfwGetTime() + 30, glm::vec3(1.0f, 1.0f, 1.0f), &ShSingleColor);
+        DrawCube(false, view, camera.Position, ShCube, vertex_VBO, glm::vec3(2.0f, -0.3f, 5.0f), glm::vec3(1.02f), texture3, specularMap, (float)glfwGetTime() + (float)glfwGetTime() / 2, glm::vec3(0.0f, 1.0f, 0.0f), &ShSingleColor);
 
         DrawLamp(view, ShSingleColor, vertex_VBO, pointLightPositions[0], glm::vec3(0.25f), lightColor);
         DrawLamp(view, ShSingleColor, vertex_VBO, pointLightPositions[1], glm::vec3(0.05f), lightColor);
@@ -535,12 +604,19 @@ int main(int argc, char** argv)
         DrawGrass(view, ShSingleTexture, transparentVAO, glm::vec3(-4.0f, 0.0f, -5.0f), grassTex);
         DrawGrass(view, ShSingleTexture, transparentVAO, glm::vec3(-6.0f, -1.0f, -5.0f), grassTex);
 
-        //using framebuffer & trying to use MSAA
+
+
+
+
+
+        //using our framebuffer & MSAA
         glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
         glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
+        //bind default framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        //Disable depth and stencil buffers to view image from our framebuffer
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_STENCIL_TEST);
         
@@ -550,10 +626,19 @@ int main(int argc, char** argv)
         glBindTexture(GL_TEXTURE_2D, screenTexture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
+
+
+
+
         glfwSwapBuffers(pWindow);
         glfwPollEvents();
     }
 
+
+
+
+
+    //clearing
     glDeleteTextures(1, &texture1); 
     glDeleteTextures(1, &texture2);
     glDeleteTextures(1, &texture3);
@@ -565,13 +650,16 @@ int main(int argc, char** argv)
     glDeleteVertexArrays(1, &quadVAO);
     glDeleteBuffers(1, &vertex_VBO);
     glDeleteFramebuffers(1, &framebuffer);
-
     glfwTerminate;
+
     return -1;
 }
 
-void processInput(GLFWwindow* window)
-{
+
+
+
+
+void processInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
@@ -585,8 +673,7 @@ void processInput(GLFWwindow* window)
         camera.ProcessKeyboard(RIGHT, deltaTime);
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
@@ -603,10 +690,30 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     }
 
     float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; 
+    float yoffset = lastY - ypos;
 
     lastX = xpos;
     lastY = ypos;
 
     camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+void FPSLimiter(GLFWwindow* pWindow) {
+    //for border FPS to 60 frames per second
+    currentFrame = static_cast<float>(glfwGetTime());
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+
+    //for see the FPS 
+    diffTime = currentFrame - prevFrame;
+    ++counter;
+
+    if (diffTime >= 1.0 / 30.0) {
+        std::string FPS = std::to_string((1.0 / diffTime) * counter);
+        std::string ms = std::to_string((diffTime / counter) * 1000);
+        std::string title = FPS + "FPS / " + ms + "ms";
+        glfwSetWindowTitle(pWindow, title.c_str());
+        prevFrame = currentFrame;
+        counter = 0;
+    }
 }

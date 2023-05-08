@@ -1,2 +1,7 @@
-In this project, I practice using OpenGL 4.6, Cmake and others.
-Build the project to "build" folder
+***About project***
+In this project, I'm honing my skills in creating a graphics engine using OpenGL 4.6
+Here I practice, create something new and improve the old. Now this project is my main project I'm working on.
+
+-------------------
+
+To build the project, all you have to do is use CMake :)
