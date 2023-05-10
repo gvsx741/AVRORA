@@ -5,14 +5,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <thread>
-#include <mutex>
 #include <chrono>
 #include <iostream>
 #include <map>
 
 #include "Renderer/Camera.h"
 #include "Renderer/Draw.h"
+
+#define DEBUG
 
 
 
@@ -272,7 +272,7 @@ void FPSLimiter(GLFWwindow* pWindow);
 int main(int argc, char** argv)
 {
     //init a path to resources for get resoureces
-    const std::string resPath = GetResourcePath(argv[0]);
+    const std::string resPath = getResourcePath(argv[0]);
 
     if (!glfwInit()) {
         std::cout << "failed to init glfw" << std::endl;
@@ -335,13 +335,11 @@ int main(int argc, char** argv)
 
 
 
-
     //texture upload 
-    texture1 = TextureLoad(resPath, "textures/container.jpg");
-    texture2 = TextureLoad(resPath, "textures/kotya.jpg");  
-    texture3 = TextureLoad(resPath, "textures/container2.jpg");
-    specularMap = TextureLoad(resPath, "textures/container2_specular.jpg");
-    grassTex = TextureLoad(resPath, "textures/grass.png");
+    std::vector<std::string> names = { "textures/container.jpg", "textures/kotya.jpg", "textures/container2.jpg", "textures/container2_specular.jpg", "textures/grass.png" };
+    std::vector<unsigned int*> texIds = { &texture1, &texture2, &texture3, &specularMap, &grassTex };
+    uploadTextures(resPath, names, texIds);
+
     //loading textures for the cubemap
     unsigned int cubemapTexture = loadCubemap(resPath + "textures/skybox/", faces);
 
@@ -711,9 +709,10 @@ void FPSLimiter(GLFWwindow* pWindow) {
     if (diffTime >= 1.0 / 30.0) {
         std::string FPS = std::to_string((1.0 / diffTime) * counter);
         std::string ms = std::to_string((diffTime / counter) * 1000);
-        std::string title = FPS + "FPS / " + ms + "ms";
+        std::string title = "AVRORA | " + FPS + "FPS / " + ms + "ms";
         glfwSetWindowTitle(pWindow, title.c_str());
         prevFrame = currentFrame;
         counter = 0;
     }
 }
+

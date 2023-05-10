@@ -3,26 +3,44 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../Resources/stb_image.h"
 
-unsigned int TextureLoad(const std::string& directory, const char* texName, bool gamma) {
+std::string getResourcePath(const std::string& executablePath) {
+	auto found = executablePath.find_last_of("/\\");
+	std::string m_path = executablePath.substr(0, found);
 
-	std::string& filename = directory + texName;
+	for (int i = 0; i < sizeof(m_path) / sizeof(char); i++) {
+		if (m_path[i] == '\\') {
+			m_path[i] = '/';
+		}
+	}
+	m_path += "/res/";
+
+	return m_path;
+}
+
+GLenum determineFormat(int Channels) {
+	GLenum format;
+	if (Channels == 1) { format = GL_RED; }
+	else if (Channels == 3) { format = GL_RGB; }
+	else if (Channels == 4) { format = GL_RGBA; }
+
+	return format;
+}
+
+unsigned int textureLoad(std::string directory, std::string texName, bool gamma) {
+	std::string filename = directory + texName;
 
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
 
 	int nrComponents, width, height;
+
 	unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
 
 	if (data) {
-		GLenum format;
-		if (nrComponents == 1)
-			format = GL_RED;
-		else if (nrComponents == 3)
-			format = GL_RGB;
-		else if (nrComponents == 4)
-			format = GL_RGBA;
+		GLenum format = determineFormat(nrComponents);
 
 		glBindTexture(GL_TEXTURE_2D, textureID);
+
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -31,17 +49,18 @@ unsigned int TextureLoad(const std::string& directory, const char* texName, bool
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+
 		stbi_image_free(data);
 	}
 	else {
 		std::cout << "Failed to load texture!" << std::endl;
 		stbi_image_free(data);
-	}
+	} 
 
-	return textureID;	
+	return textureID;
 }
 
-unsigned int loadCubemap(const std::string& directory, std::vector<std::string> faces) {
+unsigned int loadCubemap(std::string directory, std::vector<std::string> faces) {
 
 	std::string filename;
 
@@ -73,22 +92,55 @@ unsigned int loadCubemap(const std::string& directory, std::vector<std::string> 
 	return textureID;
 }
 
-ResourceManager::~ResourceManager()
-{
-
+//for multi-threading loading
+texture loadImage(const std::string& path) {
+	texture tex;
+	tex.data = stbi_load(path.c_str(), &tex.width, &tex.height, &tex.channels, 0);
+	return tex;
 }
 
-std::string GetResourcePath(const std::string& executablePath)
-{
-	auto found = executablePath.find_last_of("/\\");
-	std::string m_path = executablePath.substr(0, found);
+//uploading need textures
+void uploadTextures(std::string resPath, std::vector<std::string>& names, std::vector<unsigned int*>& texIds) {
 
-	for (int i = 0; i < sizeof(m_path) / sizeof(char); i++) {
-		if (m_path[i] == '\\') {
-			m_path[i] = '/';
+	unsigned int n = names.size();
+
+	std::vector<std::future<texture>> f(n);
+
+	for (int i = 0; i < n; ++i) {
+		f[i] = std::async(std::launch::async, loadImage, resPath + names[i]);
+	}
+
+	for (int i = 0; i < n; ++i) {
+
+		texture tex;
+		f[i].wait();
+		tex = f[i].get();
+
+		if (tex.data) {
+
+			glGenTextures(1, texIds[i]);
+			glBindTexture(GL_TEXTURE_2D, *texIds[i]);
+
+			GLenum format = determineFormat(tex.channels);
+
+			glTexImage2D(GL_TEXTURE_2D, 0, format, tex.width, tex.height, 0, format, GL_UNSIGNED_BYTE, tex.data);
+			glGenerateMipmap(GL_TEXTURE_2D);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+
+			stbi_image_free(tex.data);
+		}
+		else {
+			std::cout << "Failed to load texture!" << std::endl;
+			stbi_image_free(tex.data);
 		}
 	}
-	m_path += "/res/";
-	
-	return m_path;
+}
+
+ResourceManager::~ResourceManager() {
+
 }

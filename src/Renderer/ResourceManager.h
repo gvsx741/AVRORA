@@ -1,8 +1,7 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <thread>
-#include <mutex>
+#include <future>
 #include <vector>
 #include <iostream>
 #include <string>
@@ -11,9 +10,14 @@ class ResourceManager {
 public:
 	ResourceManager() = default;
 	~ResourceManager();
-
 };
 
-std::string GetResourcePath(const std::string& executablePath);
-unsigned int TextureLoad(const std::string& directory, const char* texName, bool gamma = false);
-unsigned int loadCubemap(const std::string& directory, std::vector<std::string> faces);
+struct texture {
+	int width, height, channels;
+	unsigned char* data;
+};
+
+std::string getResourcePath(const std::string& executablePath);
+unsigned int textureLoad(std::string directory, std::string texName, bool gamma = false);
+unsigned int loadCubemap(std::string directory, std::vector<std::string> faces);
+void uploadTextures(std::string resPath, std::vector<std::string>& names, std::vector<unsigned int*>& texIds);
