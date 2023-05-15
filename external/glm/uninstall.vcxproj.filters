@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\work\Projects\C++\AVRORA\CMakeFiles\fa7d56184583ff04915600637c33b59f\uninstall.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\work\Projects\C++\AVRORA\external\glm\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\work\Projects\C++\AVRORA\external\glm\CMakeFiles\uninstall" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{34D65C80-5EDD-3AFB-A253-08A06E188873}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

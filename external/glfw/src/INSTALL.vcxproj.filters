@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\work\Projects\C++\AVRORA\CMakeFiles\6442c71ae7a8339c04b44799d43bab3a\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{34D65C80-5EDD-3AFB-A253-08A06E188873}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

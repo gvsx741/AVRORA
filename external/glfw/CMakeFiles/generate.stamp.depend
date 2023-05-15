@@ -1,0 +1,15 @@
+# CMake generation dependency list for this directory.
+D:/work/CMake/share/cmake-3.25/Modules/BasicConfigVersion-SameMajorVersion.cmake.in
+D:/work/CMake/share/cmake-3.25/Modules/CMakeDependentOption.cmake
+D:/work/CMake/share/cmake-3.25/Modules/CMakePackageConfigHelpers.cmake
+D:/work/CMake/share/cmake-3.25/Modules/CheckCSourceCompiles.cmake
+D:/work/CMake/share/cmake-3.25/Modules/CheckIncludeFile.cmake
+D:/work/CMake/share/cmake-3.25/Modules/CheckLibraryExists.cmake
+D:/work/CMake/share/cmake-3.25/Modules/FindPackageHandleStandardArgs.cmake
+D:/work/CMake/share/cmake-3.25/Modules/FindPackageMessage.cmake
+D:/work/CMake/share/cmake-3.25/Modules/FindThreads.cmake
+D:/work/CMake/share/cmake-3.25/Modules/GNUInstallDirs.cmake
+D:/work/CMake/share/cmake-3.25/Modules/Internal/CheckSourceCompiles.cmake
+D:/work/CMake/share/cmake-3.25/Modules/WriteBasicConfigVersionFile.cmake
+D:/work/Projects/C++/AVRORA/external/glfw/CMake/glfw3Config.cmake.in
+D:/work/Projects/C++/AVRORA/external/glfw/CMakeLists.txt

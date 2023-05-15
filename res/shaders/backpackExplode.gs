@@ -36,5 +36,6 @@ void main() {
     gl_Position = explode(gl_in[2].gl_Position, normal);
     TexCoords = gs_in[2].texCoords;
     EmitVertex();
+	
     EndPrimitive();
 }

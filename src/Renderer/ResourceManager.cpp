@@ -60,6 +60,13 @@ unsigned int textureLoad(std::string directory, std::string texName, bool gamma)
 	return textureID;
 }
 
+//for multi-threading loading
+texture loadImage(std::string& path) {
+	texture tex;
+	tex.data = stbi_load(path.c_str(), &tex.width, &tex.height, &tex.channels, 0);
+	return tex;
+}
+
 unsigned int loadCubemap(std::string directory, std::vector<std::string> faces) {
 
 	std::string filename;
@@ -68,18 +75,25 @@ unsigned int loadCubemap(std::string directory, std::vector<std::string> faces) 
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-	int width, height, nrChannels;
-	for (unsigned int i = 0; i < faces.size(); i++) {
+	int n = faces.size();
+	std::vector<std::future<texture>> f(n);
 
-		filename = directory + faces[i];
-		unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
-		if (data) {
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-			stbi_image_free(data);
+	for (unsigned int i = 0; i < n; ++i) {
+		f[i] = std::async(std::launch::async, loadImage, directory + faces[i]);
+	}
+
+	for (unsigned int i = 0; i < n; ++i) {
+
+		f[i].wait();
+		texture tex = f[i].get();
+
+		if (tex.data) {
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, tex.width, tex.height, 0, GL_RGB, GL_UNSIGNED_BYTE, tex.data);
+			stbi_image_free(tex.data);
 		}
 		else {
 			std::cout << "ERROR: Cubemap tex failed to load at path: " << faces[i] << std::endl;
-			stbi_image_free(data);
+			stbi_image_free(tex.data);
 		}
 	}
 
@@ -90,13 +104,6 @@ unsigned int loadCubemap(std::string directory, std::vector<std::string> faces) 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	return textureID;
-}
-
-//for multi-threading loading
-texture loadImage(const std::string& path) {
-	texture tex;
-	tex.data = stbi_load(path.c_str(), &tex.width, &tex.height, &tex.channels, 0);
-	return tex;
 }
 
 //uploading need textures

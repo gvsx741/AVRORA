@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\work\Projects\C++\AVRORA\CMakeFiles\6442c71ae7a8339c04b44799d43bab3a\update_mappings.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\work\Projects\C++\AVRORA\external\glfw\src\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\work\Projects\C++\AVRORA\external\glfw\src\mappings.h.in">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="D:\work\Projects\C++\AVRORA\external\glfw\CMake\GenerateMappings.cmake" />
+    <None Include="D:\work\Projects\C++\AVRORA\external\glfw\src\CMakeFiles\update_mappings" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{34D65C80-5EDD-3AFB-A253-08A06E188873}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{760C0A6B-EA3C-35E9-A1EA-4FEF852C8641}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

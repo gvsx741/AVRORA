@@ -12,7 +12,7 @@
 #include "Renderer/Camera.h"
 #include "Renderer/Draw.h"
 
-#define DEBUG
+//#define DEBUG
 
 
 
@@ -516,16 +516,16 @@ int main(int argc, char** argv)
 
 
 
+    #ifdef DEBUG
+        std::cout << "before loading the model: " << glfwGetTime() << std::endl;
+    #endif // DEBUG
+
     //init the model class and load backpack model 
     Model MBackpack(resPath, "models/backpack/backpack.obj");
 
-
-
-
-
     //time complite project
     #ifdef DEBUG
-        std::cout << glfwGetTime() << std::endl;
+        std::cout << "loading is complete: " << glfwGetTime() << std::endl;
     #endif // DEBUG
 
 
