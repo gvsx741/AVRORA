@@ -7,9 +7,9 @@ std::string getResourcePath(const std::string& executablePath) {
 	auto found = executablePath.find_last_of("/\\");
 	std::string m_path = executablePath.substr(0, found);
 
-	for (int i = 0; i < sizeof(m_path) / sizeof(char); i++) {
-		if (m_path[i] == '\\') {
-			m_path[i] = '/';
+	for (auto it = m_path.begin(); it < m_path.end(); it++) {
+		if (*it == '\\') {
+			*it = '/';
 		}
 	}
 	m_path += "/res/";
